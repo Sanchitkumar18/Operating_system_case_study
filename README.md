@@ -123,7 +123,8 @@ This tool helps students understand:
 - Comparison mode for multiple algorithms
 
 ## Author Information
-- **Registration no-23BCE0043
+- Name-Sanchit Kumar
+- Registration no-23BCE0043
 - **Submission Date**: 03-11-2025
 
 ## License
