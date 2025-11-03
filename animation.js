@@ -1,4 +1,4 @@
-// animation.js
+
 
 function startAnimation() {
   if (!animationSteps || animationSteps.length === 0) {

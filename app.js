@@ -1,4 +1,4 @@
-// app.js
+
 
 // Helper: read inputs and populate processes array
 function readProcessesFromUI() {

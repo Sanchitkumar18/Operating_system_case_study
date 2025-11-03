@@ -1,4 +1,4 @@
-// config.js
+
 // Global configuration and shared variables
 
 const processColors = [

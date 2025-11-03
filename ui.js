@@ -1,4 +1,4 @@
-// ui.js
+
 
 function generateProcessInputs() {
   const num = parseInt(document.getElementById('numProcesses').value, 10) || 4;
