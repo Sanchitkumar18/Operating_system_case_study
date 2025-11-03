@@ -1,0 +1,1145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CPU Scheduling Algorithm Visualizer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 20px;
+            padding: 30px;
+        }
+
+        .control-panel {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 10px;
+            height: fit-content;
+        }
+
+        .section {
+            margin-bottom: 25px;
+        }
+
+        .section h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 8px;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .input-group select,
+        .input-group input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .input-group select:focus,
+        .input-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .process-inputs {
+            display: grid;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .process-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            padding: 10px;
+            background: white;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+
+        .process-row input {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin: 5px;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .visualization-area {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 25px;
+        }
+
+        .canvas-container {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            border: 2px solid #e0e0e0;
+            border-radius: 5px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .stat-card h4 {
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+
+        .stat-card .value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 15px;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .legend-color {
+            width: 30px;
+            height: 20px;
+            border-radius: 3px;
+            border: 1px solid #ddd;
+        }
+
+        .timeline-control {
+            margin-top: 15px;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+        }
+
+        .timeline-control input[type="range"] {
+            width: 100%;
+            margin: 10px 0;
+        }
+
+        .speed-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .speed-control input {
+            flex: 1;
+        }
+
+        .process-table {
+            margin-top: 20px;
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background: #667eea;
+            color: white;
+            font-weight: 600;
+        }
+
+        tr:hover {
+            background: #f5f5f5;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+
+        .status-ready {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-running {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-completed {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        @media (max-width: 1024px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🖥️ CPU Scheduling Algorithm Visualizer</h1>
+            <p>Interactive Operating System Process Scheduling Simulation</p>
+        </div>
+
+        <div class="main-content">
+            <div class="control-panel">
+                <div class="section">
+                    <h3>Algorithm Selection</h3>
+                    <div class="input-group">
+                        <label>Scheduling Algorithm:</label>
+                        <select id="algorithm">
+                            <option value="fcfs">First Come First Serve (FCFS)</option>
+                            <option value="sjf">Shortest Job First (SJF)</option>
+                            <option value="priority">Priority Scheduling</option>
+                            <option value="rr">Round Robin (RR)</option>
+                        </select>
+                    </div>
+                    <div class="input-group" id="quantumGroup" style="display: none;">
+                        <label>Time Quantum:</label>
+                        <input type="number" id="quantum" value="2" min="1">
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h3>Process Configuration</h3>
+                    <div class="input-group">
+                        <label>Number of Processes:</label>
+                        <input type="number" id="numProcesses" value="4" min="2" max="8">
+                    </div>
+                    <button class="btn btn-secondary" onclick="generateProcessInputs()" style="width: 100%;">Generate Process Inputs</button>
+                    
+                    <div id="processInputs" class="process-inputs"></div>
+                </div>
+
+                <div class="section">
+                    <button class="btn btn-primary" onclick="startSimulation()" style="width: 100%;">▶️ Start Simulation</button>
+                    <button class="btn btn-secondary" onclick="resetSimulation()" style="width: 100%;">🔄 Reset</button>
+                </div>
+
+                <div class="section">
+                    <h3>Animation Controls</h3>
+                    <div class="controls">
+                        <button class="btn btn-secondary" id="playPauseBtn" onclick="togglePlayPause()" disabled>⏸️ Pause</button>
+                        <button class="btn btn-secondary" onclick="stepBackward()" disabled id="stepBackBtn">⏮️ Back</button>
+                        <button class="btn btn-secondary" onclick="stepForward()" disabled id="stepFwdBtn">⏭️ Forward</button>
+                    </div>
+                    <div class="speed-control">
+                        <label>Speed:</label>
+                        <input type="range" id="speedControl" min="1" max="10" value="5">
+                        <span id="speedValue">1x</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="visualization-area">
+                <div class="canvas-container">
+                    <h3 style="margin-bottom: 15px;">Gantt Chart Visualization</h3>
+                    <canvas id="ganttCanvas" width="900" height="200"></canvas>
+                </div>
+
+                <div class="canvas-container">
+                    <h3 style="margin-bottom: 15px;">Process Queue & CPU State</h3>
+                    <canvas id="queueCanvas" width="900" height="250"></canvas>
+                </div>
+
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #4CAF50;"></div>
+                        <span>Running</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #FFC107;"></div>
+                        <span>Ready</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #2196F3;"></div>
+                        <span>Completed</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #9E9E9E;"></div>
+                        <span>Waiting</span>
+                    </div>
+                </div>
+
+                <div class="timeline-control">
+                    <label>Timeline Position: <span id="timelineLabel">0</span></label>
+                    <input type="range" id="timeline" min="0" max="100" value="0" disabled>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h4>Current Time</h4>
+                        <div class="value" id="currentTime">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <h4>Avg Waiting Time</h4>
+                        <div class="value" id="avgWaitTime">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <h4>Avg Turnaround Time</h4>
+                        <div class="value" id="avgTurnTime">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <h4>CPU Utilization</h4>
+                        <div class="value" id="cpuUtil">0%</div>
+                    </div>
+                </div>
+
+                <div class="process-table">
+                    <h3 style="margin-bottom: 15px;">Process Details</h3>
+                    <table id="processTable">
+                        <thead>
+                            <tr>
+                                <th>Process</th>
+                                <th>Arrival</th>
+                                <th>Burst</th>
+                                <th>Priority</th>
+                                <th>Completion</th>
+                                <th>Turnaround</th>
+                                <th>Waiting</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="processTableBody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let processes = [];
+        let animationSteps = [];
+        let currentStep = 0;
+        let isPlaying = false;
+        let animationInterval = null;
+        let ganttChart = [];
+        
+        const ganttCanvas = document.getElementById('ganttCanvas');
+        const queueCanvas = document.getElementById('queueCanvas');
+        const ganttCtx = ganttCanvas.getContext('2d');
+        const queueCtx = queueCanvas.getContext('2d');
+
+        // Process colors
+        const processColors = [
+            '#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A',
+            '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E2'
+        ];
+
+        // Initialize
+        document.getElementById('algorithm').addEventListener('change', function() {
+            document.getElementById('quantumGroup').style.display = 
+                this.value === 'rr' ? 'block' : 'none';
+        });
+
+        document.getElementById('speedControl').addEventListener('input', function() {
+            const speed = this.value;
+            document.getElementById('speedValue').textContent = (speed / 5).toFixed(1) + 'x';
+            if (isPlaying) {
+                clearInterval(animationInterval);
+                startAnimation();
+            }
+        });
+
+        document.getElementById('timeline').addEventListener('input', function() {
+            currentStep = parseInt(this.value);
+            document.getElementById('timelineLabel').textContent = currentStep;
+            drawCurrentState();
+        });
+
+        // Generate process input fields
+        function generateProcessInputs() {
+            const numProcesses = parseInt(document.getElementById('numProcesses').value);
+            const container = document.getElementById('processInputs');
+            container.innerHTML = '';
+
+            for (let i = 0; i < numProcesses; i++) {
+                const row = document.createElement('div');
+                row.className = 'process-row';
+                row.innerHTML = `
+                    <input type="number" placeholder="Arrival ${i+1}" value="${i}" min="0" id="arrival${i}">
+                    <input type="number" placeholder="Burst ${i+1}" value="${Math.floor(Math.random() * 8) + 2}" min="1" id="burst${i}">
+                    <input type="number" placeholder="Priority ${i+1}" value="${Math.floor(Math.random() * 5) + 1}" min="1" id="priority${i}">
+                `;
+                container.appendChild(row);
+            }
+        }
+
+        // Start simulation
+        function startSimulation() {
+            resetSimulation();
+            
+            // Read process data
+            const numProcesses = parseInt(document.getElementById('numProcesses').value);
+            processes = [];
+            
+            for (let i = 0; i < numProcesses; i++) {
+                processes.push({
+                    id: i,
+                    name: 'P' + (i + 1),
+                    arrival: parseInt(document.getElementById('arrival' + i).value),
+                    burst: parseInt(document.getElementById('burst' + i).value),
+                    priority: parseInt(document.getElementById('priority' + i).value),
+                    remaining: parseInt(document.getElementById('burst' + i).value),
+                    completion: 0,
+                    turnaround: 0,
+                    waiting: 0,
+                    status: 'waiting'
+                });
+            }
+
+            // Run scheduling algorithm
+            const algorithm = document.getElementById('algorithm').value;
+            switch(algorithm) {
+                case 'fcfs':
+                    runFCFS();
+                    break;
+                case 'sjf':
+                    runSJF();
+                    break;
+                case 'priority':
+                    runPriority();
+                    break;
+                case 'rr':
+                    runRoundRobin();
+                    break;
+            }
+
+            // Enable controls
+            document.getElementById('playPauseBtn').disabled = false;
+            document.getElementById('stepBackBtn').disabled = false;
+            document.getElementById('stepFwdBtn').disabled = false;
+            document.getElementById('timeline').disabled = false;
+            document.getElementById('timeline').max = animationSteps.length - 1;
+
+            // Start animation
+            isPlaying = true;
+            startAnimation();
+        }
+
+        // FCFS Scheduling
+        function runFCFS() {
+            processes.sort((a, b) => a.arrival - b.arrival);
+            let currentTime = 0;
+            ganttChart = [];
+
+            for (let i = 0; i < processes.length; i++) {
+                const process = processes[i];
+                
+                if (currentTime < process.arrival) {
+                    currentTime = process.arrival;
+                }
+
+                const startTime = currentTime;
+                
+                // Create animation steps
+                for (let t = 0; t < process.burst; t++) {
+                    animationSteps.push({
+                        time: currentTime,
+                        currentProcess: process.id,
+                        readyQueue: processes.slice(i + 1).filter(p => p.arrival <= currentTime).map(p => p.id),
+                        completedProcesses: processes.slice(0, i).map(p => p.id)
+                    });
+                    currentTime++;
+                }
+
+                ganttChart.push({
+                    process: process.name,
+                    start: startTime,
+                    end: currentTime,
+                    color: processColors[process.id % processColors.length]
+                });
+
+                process.completion = currentTime;
+                process.turnaround = process.completion - process.arrival;
+                process.waiting = process.turnaround - process.burst;
+            }
+
+            calculateStatistics();
+        }
+
+        // SJF Scheduling
+        function runSJF() {
+            let currentTime = 0;
+            let completed = 0;
+            const n = processes.length;
+            const isCompleted = new Array(n).fill(false);
+            ganttChart = [];
+
+            while (completed < n) {
+                let idx = -1;
+                let minBurst = Infinity;
+
+                for (let i = 0; i < n; i++) {
+                    if (processes[i].arrival <= currentTime && !isCompleted[i]) {
+                        if (processes[i].burst < minBurst) {
+                            minBurst = processes[i].burst;
+                            idx = i;
+                        }
+                    }
+                }
+
+                if (idx === -1) {
+                    currentTime++;
+                    continue;
+                }
+
+                const process = processes[idx];
+                const startTime = currentTime;
+
+                for (let t = 0; t < process.burst; t++) {
+                    animationSteps.push({
+                        time: currentTime,
+                        currentProcess: process.id,
+                        readyQueue: processes.filter((p, i) => !isCompleted[i] && i !== idx && p.arrival <= currentTime).map(p => p.id),
+                        completedProcesses: processes.filter((p, i) => isCompleted[i]).map(p => p.id)
+                    });
+                    currentTime++;
+                }
+
+                ganttChart.push({
+                    process: process.name,
+                    start: startTime,
+                    end: currentTime,
+                    color: processColors[process.id % processColors.length]
+                });
+
+                process.completion = currentTime;
+                process.turnaround = process.completion - process.arrival;
+                process.waiting = process.turnaround - process.burst;
+                isCompleted[idx] = true;
+                completed++;
+            }
+
+            calculateStatistics();
+        }
+
+        // Priority Scheduling
+        function runPriority() {
+            let currentTime = 0;
+            let completed = 0;
+            const n = processes.length;
+            const isCompleted = new Array(n).fill(false);
+            ganttChart = [];
+
+            while (completed < n) {
+                let idx = -1;
+                let highestPriority = Infinity;
+
+                for (let i = 0; i < n; i++) {
+                    if (processes[i].arrival <= currentTime && !isCompleted[i]) {
+                        if (processes[i].priority < highestPriority) {
+                            highestPriority = processes[i].priority;
+                            idx = i;
+                        }
+                    }
+                }
+
+                if (idx === -1) {
+                    currentTime++;
+                    continue;
+                }
+
+                const process = processes[idx];
+                const startTime = currentTime;
+
+                for (let t = 0; t < process.burst; t++) {
+                    animationSteps.push({
+                        time: currentTime,
+                        currentProcess: process.id,
+                        readyQueue: processes.filter((p, i) => !isCompleted[i] && i !== idx && p.arrival <= currentTime).map(p => p.id),
+                        completedProcesses: processes.filter((p, i) => isCompleted[i]).map(p => p.id)
+                    });
+                    currentTime++;
+                }
+
+                ganttChart.push({
+                    process: process.name,
+                    start: startTime,
+                    end: currentTime,
+                    color: processColors[process.id % processColors.length]
+                });
+
+                process.completion = currentTime;
+                process.turnaround = process.completion - process.arrival;
+                process.waiting = process.turnaround - process.burst;
+                isCompleted[idx] = true;
+                completed++;
+            }
+
+            calculateStatistics();
+        }
+
+        // Round Robin Scheduling
+        function runRoundRobin() {
+            const quantum = parseInt(document.getElementById('quantum').value);
+            let currentTime = 0;
+            let queue = [];
+            const remaining = processes.map(p => p.remaining);
+            const n = processes.length;
+            let completed = 0;
+            ganttChart = [];
+
+            processes.forEach(p => p.remaining = p.burst);
+
+            let i = 0;
+            while (completed < n) {
+                // Add new arrivals to queue
+                while (i < n && processes[i].arrival <= currentTime) {
+                    queue.push(i);
+                    i++;
+                }
+
+                if (queue.length === 0) {
+                    currentTime++;
+                    continue;
+                }
+
+                const idx = queue.shift();
+                const process = processes[idx];
+                const execTime = Math.min(quantum, process.remaining);
+                const startTime = currentTime;
+
+                for (let t = 0; t < execTime; t++) {
+                    animationSteps.push({
+                        time: currentTime,
+                        currentProcess: process.id,
+                        readyQueue: queue.map(id => processes[id].id),
+                        completedProcesses: processes.filter(p => p.remaining === 0 && p.id !== process.id).map(p => p.id)
+                    });
+                    currentTime++;
+                }
+
+                ganttChart.push({
+                    process: process.name,
+                    start: startTime,
+                    end: currentTime,
+                    color: processColors[process.id % processColors.length]
+                });
+
+                process.remaining -= execTime;
+
+                // Add new arrivals
+                while (i < n && processes[i].arrival <= currentTime) {
+                    queue.push(i);
+                    i++;
+                }
+
+                if (process.remaining > 0) {
+                    queue.push(idx);
+                } else {
+                    process.completion = currentTime;
+                    process.turnaround = process.completion - process.arrival;
+                    process.waiting = process.turnaround - process.burst;
+                    completed++;
+                }
+            }
+
+            calculateStatistics();
+        }
+
+        // Calculate statistics
+        function calculateStatistics() {
+            let totalWait = 0;
+            let totalTurn = 0;
+            
+            processes.forEach(p => {
+                totalWait += p.waiting;
+                totalTurn += p.turnaround;
+            });
+
+            const avgWait = (totalWait / processes.length).toFixed(2);
+            const avgTurn = (totalTurn / processes.length).toFixed(2);
+            const totalTime = Math.max(...processes.map(p => p.completion));
+            const totalBurst = processes.reduce((sum, p) => sum + p.burst, 0);
+            const cpuUtil = ((totalBurst / totalTime) * 100).toFixed(2);
+
+            document.getElementById('avgWaitTime').textContent = avgWait;
+            document.getElementById('avgTurnTime').textContent = avgTurn;
+            document.getElementById('cpuUtil').textContent = cpuUtil + '%';
+        }
+
+        // Animation control
+        function startAnimation() {
+            const speed = parseInt(document.getElementById('speedControl').value);
+            const interval = 1100 - (speed * 100);
+
+            animationInterval = setInterval(() => {
+                if (currentStep < animationSteps.length - 1) {
+                    currentStep++;
+                    document.getElementById('timeline').value = currentStep;
+                    document.getElementById('timelineLabel').textContent = currentStep;
+                    drawCurrentState();
+                } else {
+                    togglePlayPause();
+                }
+            }, interval);
+        }
+
+        function togglePlayPause() {
+            isPlaying = !isPlaying;
+            const btn = document.getElementById('playPauseBtn');
+            
+            if (isPlaying) {
+                btn.textContent = '⏸️ Pause';
+                startAnimation();
+            } else {
+                btn.textContent = '▶️ Play';
+                clearInterval(animationInterval);
+            }
+        }
+
+        function stepForward() {
+            if (currentStep < animationSteps.length - 1) {
+                currentStep++;
+                document.getElementById('timeline').value = currentStep;
+                document.getElementById('timelineLabel').textContent = currentStep;
+                drawCurrentState();
+            }
+        }
+
+        function stepBackward() {
+            if (currentStep > 0) {
+                currentStep--;
+                document.getElementById('timeline').value = currentStep;
+                document.getElementById('timelineLabel').textContent = currentStep;
+                drawCurrentState();
+            }
+        }
+
+        // Draw current state
+        function drawCurrentState() {
+            if (animationSteps.length === 0) return;
+
+            const step = animationSteps[currentStep];
+            document.getElementById('currentTime').textContent = step.time;
+
+            // Draw Gantt Chart
+            drawGanttChart(step.time);
+
+            // Draw Queue
+            drawQueue(step);
+
+            // Update process table
+            updateProcessTable(step);
+        }
+
+        // Draw Gantt Chart
+        function drawGanttChart(currentTime) {
+            ganttCtx.clearRect(0, 0, ganttCanvas.width, ganttCanvas.height);
+            
+            const maxTime = Math.max(...processes.map(p => p.completion));
+            const scale = (ganttCanvas.width - 100) / maxTime;
+            const barHeight = 60;
+            const startY = 70;
+
+            // Draw title
+            ganttCtx.fillStyle = '#333';
+            ganttCtx.font = 'bold 16px Arial';
+            ganttCtx.fillText('Gantt Chart', 20, 30);
+
+            // Draw timeline
+            ganttCtx.strokeStyle = '#ddd';
+            ganttCtx.lineWidth = 1;
+            for (let i = 0; i <= maxTime; i++) {
+                const x = 50 + i * scale;
+                ganttCtx.beginPath();
+                ganttCtx.moveTo(x, startY - 10);
+                ganttCtx.lineTo(x, startY + barHeight + 10);
+                ganttCtx.stroke();
+                
+                ganttCtx.fillStyle = '#666';
+                ganttCtx.font = '10px Arial';
+                ganttCtx.fillText(i, x - 5, startY - 15);
+            }
+
+            // Draw gantt bars
+            ganttChart.forEach(item => {
+                const x = 50 + item.start * scale;
+                const width = (item.end - item.start) * scale;
+                
+                // Bar background
+                ganttCtx.fillStyle = item.color;
+                ganttCtx.fillRect(x, startY, width, barHeight);
+                
+                // Bar border
+                ganttCtx.strokeStyle = '#333';
+                ganttCtx.lineWidth = 2;
+                ganttCtx.strokeRect(x, startY, width, barHeight);
+                
+                // Process name
+                ganttCtx.fillStyle = '#fff';
+                ganttCtx.font = 'bold 14px Arial';
+                ganttCtx.fillText(item.process, x + width/2 - 15, startY + barHeight/2 + 5);
+            });
+
+            // Draw current time indicator
+            const currentX = 50 + currentTime * scale;
+            ganttCtx.strokeStyle = '#FF0000';
+            ganttCtx.lineWidth = 3;
+            ganttCtx.beginPath();
+            ganttCtx.moveTo(currentX, startY - 20);
+            ganttCtx.lineTo(currentX, startY + barHeight + 20);
+            ganttCtx.stroke();
+
+            // Current time label
+            ganttCtx.fillStyle = '#FF0000';
+            ganttCtx.font = 'bold 12px Arial';
+            ganttCtx.fillText('T=' + currentTime, currentX - 15, startY + barHeight + 35);
+        }
+
+        // Draw Queue and CPU State
+        function drawQueue(step) {
+            queueCtx.clearRect(0, 0, queueCanvas.width, queueCanvas.height);
+
+            // Draw CPU
+            queueCtx.fillStyle = '#f0f0f0';
+            queueCtx.fillRect(50, 30, 150, 80);
+            queueCtx.strokeStyle = '#333';
+            queueCtx.lineWidth = 2;
+            queueCtx.strokeRect(50, 30, 150, 80);
+            
+            queueCtx.fillStyle = '#333';
+            queueCtx.font = 'bold 14px Arial';
+            queueCtx.fillText('CPU', 110, 20);
+
+            // Draw current process in CPU
+            if (step.currentProcess !== undefined && step.currentProcess !== -1) {
+                const process = processes[step.currentProcess];
+                queueCtx.fillStyle = processColors[process.id % processColors.length];
+                queueCtx.fillRect(70, 50, 110, 40);
+                queueCtx.strokeStyle = '#333';
+                queueCtx.strokeRect(70, 50, 110, 40);
+                
+                queueCtx.fillStyle = '#fff';
+                queueCtx.font = 'bold 16px Arial';
+                queueCtx.fillText(process.name, 110, 75);
+            } else {
+                queueCtx.fillStyle = '#999';
+                queueCtx.font = '14px Arial';
+                queueCtx.fillText('IDLE', 105, 75);
+            }
+
+            // Draw Ready Queue
+            queueCtx.fillStyle = '#333';
+            queueCtx.font = 'bold 14px Arial';
+            queueCtx.fillText('Ready Queue', 280, 20);
+
+            queueCtx.fillStyle = '#fff3cd';
+            queueCtx.fillRect(250, 30, 600, 80);
+            queueCtx.strokeStyle = '#333';
+            queueCtx.lineWidth = 2;
+            queueCtx.strokeRect(250, 30, 600, 80);
+
+            // Draw processes in ready queue
+            step.readyQueue.forEach((pid, index) => {
+                const process = processes[pid];
+                const x = 270 + index * 80;
+                const y = 50;
+                
+                queueCtx.fillStyle = processColors[process.id % processColors.length];
+                queueCtx.fillRect(x, y, 60, 40);
+                queueCtx.strokeStyle = '#333';
+                queueCtx.strokeRect(x, y, 60, 40);
+                
+                queueCtx.fillStyle = '#fff';
+                queueCtx.font = 'bold 14px Arial';
+                queueCtx.fillText(process.name, x + 18, y + 25);
+            });
+
+            if (step.readyQueue.length === 0) {
+                queueCtx.fillStyle = '#999';
+                queueCtx.font = '14px Arial';
+                queueCtx.fillText('Empty', 520, 75);
+            }
+
+            // Draw Completed Processes
+            queueCtx.fillStyle = '#333';
+            queueCtx.font = 'bold 14px Arial';
+            queueCtx.fillText('Completed', 400, 150);
+
+            queueCtx.fillStyle = '#d1ecf1';
+            queueCtx.fillRect(250, 160, 600, 60);
+            queueCtx.strokeStyle = '#333';
+            queueCtx.lineWidth = 2;
+            queueCtx.strokeRect(250, 160, 600, 60);
+
+            // Draw completed processes
+            step.completedProcesses.forEach((pid, index) => {
+                const process = processes[pid];
+                const x = 270 + index * 80;
+                const y = 175;
+                
+                queueCtx.fillStyle = processColors[process.id % processColors.length];
+                queueCtx.globalAlpha = 0.6;
+                queueCtx.fillRect(x, y, 60, 30);
+                queueCtx.globalAlpha = 1.0;
+                queueCtx.strokeStyle = '#333';
+                queueCtx.strokeRect(x, y, 60, 30);
+                
+                queueCtx.fillStyle = '#fff';
+                queueCtx.font = 'bold 12px Arial';
+                queueCtx.fillText(process.name, x + 18, y + 20);
+            });
+
+            if (step.completedProcesses.length === 0) {
+                queueCtx.fillStyle = '#999';
+                queueCtx.font = '14px Arial';
+                queueCtx.fillText('None', 520, 195);
+            }
+
+            // Draw waiting processes
+            queueCtx.fillStyle = '#333';
+            queueCtx.font = 'bold 14px Arial';
+            queueCtx.fillText('Waiting', 80, 150);
+
+            const waitingProcesses = processes.filter(p => 
+                p.arrival > step.time || 
+                (!step.readyQueue.includes(p.id) && 
+                 !step.completedProcesses.includes(p.id) && 
+                 p.id !== step.currentProcess)
+            );
+
+            queueCtx.fillStyle = '#f5f5f5';
+            queueCtx.fillRect(50, 160, 150, 60);
+            queueCtx.strokeStyle = '#333';
+            queueCtx.lineWidth = 2;
+            queueCtx.strokeRect(50, 160, 150, 60);
+
+            waitingProcesses.slice(0, 2).forEach((process, index) => {
+                const x = 65 + index * 65;
+                const y = 175;
+                
+                queueCtx.fillStyle = processColors[process.id % processColors.length];
+                queueCtx.globalAlpha = 0.4;
+                queueCtx.fillRect(x, y, 50, 30);
+                queueCtx.globalAlpha = 1.0;
+                queueCtx.strokeStyle = '#333';
+                queueCtx.strokeRect(x, y, 50, 30);
+                
+                queueCtx.fillStyle = '#333';
+                queueCtx.font = 'bold 11px Arial';
+                queueCtx.fillText(process.name, x + 15, y + 20);
+            });
+
+            if (waitingProcesses.length === 0) {
+                queueCtx.fillStyle = '#999';
+                queueCtx.font = '12px Arial';
+                queueCtx.fillText('None', 105, 195);
+            }
+        }
+
+        // Update process table
+        function updateProcessTable(step) {
+            const tbody = document.getElementById('processTableBody');
+            tbody.innerHTML = '';
+
+            processes.forEach(process => {
+                const row = tbody.insertRow();
+                
+                let status = 'waiting';
+                let statusClass = 'status-ready';
+                
+                if (step.completedProcesses.includes(process.id)) {
+                    status = 'completed';
+                    statusClass = 'status-completed';
+                } else if (step.currentProcess === process.id) {
+                    status = 'running';
+                    statusClass = 'status-running';
+                } else if (step.readyQueue.includes(process.id)) {
+                    status = 'ready';
+                    statusClass = 'status-ready';
+                }
+
+                row.innerHTML = `
+                    <td><strong>${process.name}</strong></td>
+                    <td>${process.arrival}</td>
+                    <td>${process.burst}</td>
+                    <td>${process.priority}</td>
+                    <td>${process.completion || '-'}</td>
+                    <td>${process.turnaround || '-'}</td>
+                    <td>${process.waiting || '-'}</td>
+                    <td><span class="status-indicator ${statusClass}">${status.toUpperCase()}</span></td>
+                `;
+            });
+        }
+
+        // Reset simulation
+        function resetSimulation() {
+            clearInterval(animationInterval);
+            isPlaying = false;
+            currentStep = 0;
+            animationSteps = [];
+            ganttChart = [];
+            
+            document.getElementById('playPauseBtn').textContent = '⏸️ Pause';
+            document.getElementById('playPauseBtn').disabled = true;
+            document.getElementById('stepBackBtn').disabled = true;
+            document.getElementById('stepFwdBtn').disabled = true;
+            document.getElementById('timeline').disabled = true;
+            document.getElementById('timeline').value = 0;
+            document.getElementById('timelineLabel').textContent = '0';
+            
+            document.getElementById('currentTime').textContent = '0';
+            document.getElementById('avgWaitTime').textContent = '0';
+            document.getElementById('avgTurnTime').textContent = '0';
+            document.getElementById('cpuUtil').textContent = '0%';
+            
+            ganttCtx.clearRect(0, 0, ganttCanvas.width, ganttCanvas.height);
+            queueCtx.clearRect(0, 0, queueCanvas.width, queueCanvas.height);
+            
+            document.getElementById('processTableBody').innerHTML = '';
+        }
+
+        // Initialize with default process inputs
+        generateProcessInputs();
+    </script>
+</body>
+</html>
