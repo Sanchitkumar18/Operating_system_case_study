@@ -1,5 +1,3 @@
-
-
 // Utilities
 function resetProcessFields() {
   processes.forEach(p => {
@@ -7,14 +5,27 @@ function resetProcessFields() {
     p.completion = 0;
     p.turnaround = 0;
     p.waiting = 0;
-    p.status = 'waiting';
+    p.status = 'ready'; // changed from 'waiting'
+  });
+}
+
+// Helper to finalize all statuses after each run
+function finalizeProcessStatus() {
+  const lastTime = Math.max(
+    ...processes.map(p => p.completion || 0),
+    animationSteps.length ? animationSteps[animationSteps.length - 1].time : 0
+  );
+
+  processes.forEach(p => {
+    if (p.remaining <= 0 || p.completion > 0) p.status = 'completed';
+    else if (p.arrival <= lastTime) p.status = 'waiting';
+    else p.status = 'ready';
   });
 }
 
 // FCFS - non-preemptive
 function runFCFS() {
   resetProcessFields();
-  // sort by arrival then id (stable)
   processes.sort((a,b) => a.arrival - b.arrival || a.id - b.id);
 
   let currentTime = 0;
@@ -24,7 +35,6 @@ function runFCFS() {
   for (let i = 0; i < processes.length; i++) {
     const proc = processes[i];
     if (currentTime < proc.arrival) {
-      // idle until arrival
       while (currentTime < proc.arrival) {
         animationSteps.push({
           time: currentTime,
@@ -46,9 +56,12 @@ function runFCFS() {
       });
       currentTime++;
     }
+
+    proc.remaining = 0;
     proc.completion = currentTime;
     proc.turnaround = proc.completion - proc.arrival;
     proc.waiting = proc.turnaround - proc.burst;
+    proc.status = 'completed';
 
     ganttChart.push({
       processId: proc.id,
@@ -59,6 +72,7 @@ function runFCFS() {
     });
   }
 
+  finalizeProcessStatus();
   calculateStatistics();
 }
 
@@ -72,7 +86,6 @@ function runSJF() {
   animationSteps = [];
   ganttChart = [];
 
-  // keep processes array order stable; we will reference by index
   while (completed < n) {
     let idx = -1;
     let minBurst = Infinity;
@@ -88,7 +101,6 @@ function runSJF() {
     }
 
     if (idx === -1) {
-      // idle
       animationSteps.push({
         time: currentTime,
         currentProcess: -1,
@@ -101,7 +113,6 @@ function runSJF() {
 
     const proc = processes[idx];
     const startTime = currentTime;
-
     for (let t = 0; t < proc.burst; t++) {
       animationSteps.push({
         time: currentTime,
@@ -112,9 +123,11 @@ function runSJF() {
       currentTime++;
     }
 
+    proc.remaining = 0;
     proc.completion = currentTime;
     proc.turnaround = proc.completion - proc.arrival;
     proc.waiting = proc.turnaround - proc.burst;
+    proc.status = 'completed';
     isCompleted[idx] = true;
     completed++;
 
@@ -127,10 +140,11 @@ function runSJF() {
     });
   }
 
+  finalizeProcessStatus();
   calculateStatistics();
 }
 
-// Priority - non-preemptive (lower number = higher priority)
+// Priority - non-preemptive
 function runPriority() {
   resetProcessFields();
   const n = processes.length;
@@ -165,7 +179,6 @@ function runPriority() {
 
     const proc = processes[idx];
     const startTime = currentTime;
-
     for (let t = 0; t < proc.burst; t++) {
       animationSteps.push({
         time: currentTime,
@@ -176,9 +189,11 @@ function runPriority() {
       currentTime++;
     }
 
+    proc.remaining = 0;
     proc.completion = currentTime;
     proc.turnaround = proc.completion - proc.arrival;
     proc.waiting = proc.turnaround - proc.burst;
+    proc.status = 'completed';
     isCompleted[idx] = true;
     completed++;
 
@@ -191,6 +206,7 @@ function runPriority() {
     });
   }
 
+  finalizeProcessStatus();
   calculateStatistics();
 }
 
@@ -201,22 +217,19 @@ function runRoundRobin(quantum = 2) {
   animationSteps = [];
   ganttChart = [];
 
-  // sort by arrival to enqueue correctly
   const order = processes.slice().sort((a,b)=> a.arrival - b.arrival || a.id - b.id);
   let currentTime = 0;
   let queue = [];
-  let i = 0; // index into order array for arrivals
+  let i = 0;
   let completed = 0;
 
   while (completed < n) {
-    // enqueue newly arrived
     while (i < order.length && order[i].arrival <= currentTime) {
       queue.push(order[i].id);
       i++;
     }
 
     if (queue.length === 0) {
-      // idle until next arrival
       if (i < order.length) {
         animationSteps.push({
           time: currentTime,
@@ -226,9 +239,7 @@ function runRoundRobin(quantum = 2) {
         });
         currentTime++;
         continue;
-      } else {
-        break;
-      }
+      } else break;
     }
 
     const pid = queue.shift();
@@ -237,7 +248,6 @@ function runRoundRobin(quantum = 2) {
     const startTime = currentTime;
 
     for (let t = 0; t < execTime; t++) {
-      // before each unit increment, enqueue arrivals that come at this currentTime
       while (i < order.length && order[i].arrival <= currentTime) {
         queue.push(order[i].id);
         i++;
@@ -253,7 +263,6 @@ function runRoundRobin(quantum = 2) {
       proc.remaining--;
     }
 
-    // add gantt block (may be multiple segments for same process)
     ganttChart.push({
       processId: proc.id,
       processName: proc.name,
@@ -262,35 +271,28 @@ function runRoundRobin(quantum = 2) {
       color: processColors[proc.id % processColors.length]
     });
 
-    // enqueue arrivals that came exactly at currentTime
     while (i < order.length && order[i].arrival <= currentTime) {
       queue.push(order[i].id);
       i++;
     }
 
     if (proc.remaining > 0) {
-      queue.push(proc.id); // add back to queue
+      queue.push(proc.id);
     } else {
+      proc.remaining = 0;
       proc.completion = currentTime;
       proc.turnaround = proc.completion - proc.arrival;
       proc.waiting = proc.turnaround - proc.burst;
+      proc.status = 'completed';
       completed++;
     }
   }
 
-  // for any process never completed (edge cases) compute stats
-  processes.forEach(p => {
-    if (p.completion === 0 && p.remaining === 0) {
-      p.completion = Math.max(...animationSteps.map(s => s.time)) + 1;
-      p.turnaround = p.completion - p.arrival;
-      p.waiting = p.turnaround - p.burst;
-    }
-  });
-
+  finalizeProcessStatus();
   calculateStatistics();
 }
 
-// Calculate statistics (avg waiting, avg turnaround, cpu util)
+// Calculate statistics
 function calculateStatistics() {
   const n = processes.length;
   let totalWait = 0;

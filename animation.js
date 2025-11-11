@@ -1,9 +1,6 @@
-
-
 function startAnimation() {
   if (!animationSteps || animationSteps.length === 0) {
-    // nothing to animate
-    return;
+    return; // nothing to animate
   }
 
   isPlaying = true;
@@ -12,7 +9,6 @@ function startAnimation() {
   document.getElementById('stepBackBtn').disabled = false;
   document.getElementById('timeline').disabled = false;
 
-  // compute interval from speed slider (1-10). higher value = faster
   const speedVal = parseInt(document.getElementById('speedControl').value, 10) || 5;
   const interval = Math.max(80, 1100 - (speedVal * 100)); // clamp
 
@@ -24,7 +20,6 @@ function startAnimation() {
       document.getElementById('timelineLabel').textContent = currentStep;
       drawCurrentState();
     } else {
-      // reached end
       clearInterval(animationInterval);
       isPlaying = false;
       document.getElementById('playPauseBtn').textContent = '▶️ Play';
@@ -73,24 +68,36 @@ function drawCurrentState() {
 
   document.getElementById('currentTime').textContent = step.time;
 
+  // 🔥 Sync process statuses live based on step info
+  processes.forEach(p => {
+    if (step.currentProcess === p.id) p.status = 'running';
+    else if (step.completedProcesses.includes(p.id)) p.status = 'completed';
+    else if (step.readyQueue.includes(p.id)) p.status = 'ready';
+    else p.status = 'waiting';
+  });
+
   drawGanttChart(step.time);
   drawQueue(step);
   updateProcessTable(step);
 }
 
+/* Draw the Gantt chart timeline */
 function drawGanttChart(currentTime) {
   if (!ganttCtx) return;
   ganttCtx.clearRect(0, 0, ganttCanvas.width, ganttCanvas.height);
 
-  const maxTime = Math.max(...processes.map(p => p.completion || 0), animationSteps.length ? animationSteps[animationSteps.length-1].time + 1 : 1);
+  const maxTime = Math.max(
+    ...processes.map(p => p.completion || 0),
+    animationSteps.length ? animationSteps[animationSteps.length - 1].time + 1 : 1
+  );
+
   const paddingLeft = 50;
   const paddingRight = 20;
   const width = ganttCanvas.width - paddingLeft - paddingRight;
-  const scale = maxTime > 0 ? (width / maxTime) : 1;
+  const scale = maxTime > 0 ? width / maxTime : 1;
   const barHeight = 40;
   const y = 60;
 
-  // draw time ticks
   ganttCtx.fillStyle = '#333';
   ganttCtx.font = '12px Arial';
   for (let t = 0; t <= maxTime; t++) {
@@ -103,26 +110,23 @@ function drawGanttChart(currentTime) {
     ganttCtx.stroke();
   }
 
-  // draw gantt bars
   ganttChart.forEach(item => {
     const x = paddingLeft + item.start * scale;
     const w = Math.max(1, (item.end - item.start) * scale);
     ganttCtx.fillStyle = item.color;
     ganttCtx.fillRect(x, y, w, barHeight);
 
-    // border
     ganttCtx.strokeStyle = '#333';
     ganttCtx.lineWidth = 1;
     ganttCtx.strokeRect(x, y, w, barHeight);
 
-    // label
     ganttCtx.fillStyle = '#fff';
     ganttCtx.font = 'bold 12px Arial';
-    const label = item.processName || ('P' + (item.processId + 1));
-    ganttCtx.fillText(label, x + w/2, y + barHeight/2 + 4);
+    const label = item.processName || 'P' + (item.processId + 1);
+    ganttCtx.fillText(label, x + w / 2 - 10, y + barHeight / 2 + 4);
   });
 
-  // draw current time pointer
+  // draw time pointer
   const currentX = paddingLeft + currentTime * scale;
   ganttCtx.beginPath();
   ganttCtx.moveTo(currentX, y - 20);
@@ -130,16 +134,18 @@ function drawGanttChart(currentTime) {
   ganttCtx.strokeStyle = '#ff0000';
   ganttCtx.lineWidth = 2;
   ganttCtx.stroke();
+
   ganttCtx.fillStyle = '#ff0000';
   ganttCtx.font = '12px Arial';
   ganttCtx.fillText('T=' + currentTime, currentX - 15, y + barHeight + 35);
 }
 
+/* Draw CPU + Ready Queue + Completed section */
 function drawQueue(step) {
   if (!queueCtx) return;
   queueCtx.clearRect(0, 0, queueCanvas.width, queueCanvas.height);
 
-  // CPU box
+  // CPU Box
   queueCtx.fillStyle = '#f0f0f0';
   queueCtx.fillRect(40, 30, 160, 90);
   queueCtx.strokeStyle = '#333';
@@ -148,7 +154,7 @@ function drawQueue(step) {
   queueCtx.font = 'bold 14px Arial';
   queueCtx.fillText('CPU', 120, 25);
 
-  // Current process in CPU
+  // Current Process in CPU
   if (typeof step.currentProcess === 'number' && step.currentProcess !== -1) {
     const p = processes.find(pp => pp.id === step.currentProcess);
     const color = processColors[p.id % processColors.length];
@@ -165,11 +171,10 @@ function drawQueue(step) {
     queueCtx.fillText('IDLE', 120, 80);
   }
 
-  // Ready queue
+  // Ready Queue
   queueCtx.fillStyle = '#333';
   queueCtx.font = 'bold 14px Arial';
   queueCtx.fillText('Ready Queue', 320, 30);
-
   queueCtx.fillStyle = '#fff3cd';
   queueCtx.fillRect(260, 30, 600, 90);
   queueCtx.strokeStyle = '#333';
@@ -196,7 +201,7 @@ function drawQueue(step) {
     queueCtx.fillText('Empty', 520, 75);
   }
 
-  // Completed
+  // Completed Section
   queueCtx.fillStyle = '#333';
   queueCtx.font = 'bold 14px Arial';
   queueCtx.fillText('Completed', 320, 150);
@@ -227,4 +232,51 @@ function drawQueue(step) {
     queueCtx.font = '12px Arial';
     queueCtx.fillText('None', 520, 185);
   }
+}
+
+/* 🧩 Update process details table dynamically */
+function updateProcessTable(step) {
+  const table = document.getElementById('processTableBody');
+  if (!table) return;
+
+  table.innerHTML = ''; // clear table
+
+  processes.forEach(p => {
+    const row = document.createElement('tr');
+
+    const cells = [
+      p.name,
+      p.arrival,
+      p.burst,
+      p.priority,
+      p.completion > 0 ? p.completion : '-',
+      p.turnaround || '-',
+      p.waiting || '-',
+      p.status.toUpperCase()
+    ];
+
+    cells.forEach(text => {
+      const td = document.createElement('td');
+      td.textContent = text;
+      row.appendChild(td);
+    });
+
+    // color-code row by status
+    switch (p.status) {
+      case 'running':
+        row.style.backgroundColor = '#d4edda'; // green
+        break;
+      case 'ready':
+        row.style.backgroundColor = '#fff3cd'; // yellow
+        break;
+      case 'completed':
+        row.style.backgroundColor = '#d1ecf1'; // blue
+        break;
+      case 'waiting':
+        row.style.backgroundColor = '#e2e3e5'; // gray
+        break;
+    }
+
+    table.appendChild(row);
+  });
 }
